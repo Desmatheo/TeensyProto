@@ -73,17 +73,17 @@ class EarthEffect : public AudioStream {
 
     void setMix(float mix);                // Ctrl 2 (0.0 -> 1.0)
     
-    void SetOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
-    void SetFootswitchAction(int action);  // 3-Way Switch 3 (1, 2)
+    void setOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
+    void setFootswitchAction(int action);  // 3-Way Switch 3 (1, 2)
     
-    void SetOctaveOnlyMode(bool enable);         // Dip Switch 2
+    void setOctaveOnlyMode(bool enable);         // Dip Switch 2
     
-    void SetMomentaryAction(bool active);        // FS 2
+    void setMomentaryAction(bool active);        // FS 2
 
 #ifndef TEENSY
-    void SetParameter(int param_id, float value) override;
+    void setParameter(int param_id, float value) override;
 #else
-    void SetParameter(int param_id, float value);
+    void setParameter(int param_id, float value);
 #endif
 
 #ifdef TEENSY

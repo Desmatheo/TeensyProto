@@ -44,7 +44,7 @@ EarthEffect::EarthEffect()
     }
 
     setMix(1.0f);
-    SetOctaveMode(1);
+    setOctaveMode(1);
 
 #ifndef TEENSY
 #if od_ON
@@ -231,31 +231,31 @@ void EarthEffect::setMix(float mix) {
     wetMix = mix;
 }
 
-void EarthEffect::SetOctaveMode(int mode) {
+void EarthEffect::setOctaveMode(int mode) {
     effect_mode = mode;
 }
 
-void EarthEffect::SetFootswitchAction(int action) {
+void EarthEffect::setFootswitchAction(int action) {
     fs_action = action;
 }
 
-void EarthEffect::SetOctaveOnlyMode(bool enable) {
+void EarthEffect::setOctaveOnlyMode(bool enable) {
     octave_only = enable;
 }
 
-void EarthEffect::SetMomentaryAction(bool active) {
+void EarthEffect::setMomentaryAction(bool active) {
     momentary_active = active;
 }
 
-void EarthEffect::SetParameter(int param_id, float value) {
+void EarthEffect::setParameter(int param_id, float value) {
     switch (param_id){
         case 0 : 
             setMix(value);
             break;
         case 1 :  
-            if (value > 0.66f) SetOctaveMode(1);
-            else if ((0.66f > value) && (value > 0.33f)) SetOctaveMode(2);
-            else SetOctaveMode(3);
+            if (value > 0.66f) setOctaveMode(1);
+            else if ((0.66f > value) && (value > 0.33f)) setOctaveMode(2);
+            else setOctaveMode(3);
         default:
             Serial.print("Parametre invalide");
             Serial.println(param_id);
