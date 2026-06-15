@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Audio.h>
+#include <Wire.h>
 #include "AudioEffectDelayMod.h"
 #include "AudioEffectDrive.h"
 #include "AudioEffectRev.h"
@@ -9,10 +10,21 @@
 
 #ifdef MODE_HEXAPHONIQUE
 
+    // --- CONFIGURATION DES ENTREES/SORTIES ---
+    #define InputTDM 1    // 1: Entrée Guitare (TDM), 0: Séquenceur d'Oscillateurs
+    #if InputTDM
+    #define OutputTDM 1   // 1: Sortie Jack CS42448 (TDM), 0: Désactivé
+    #endif
+    #define OutputUSB 1   // 1: Sortie Casque/PC (USB), 0: Désactivé
+    // -----------------------------------------
+
     void OnControlChange(byte channel, byte control, byte value);
 
     #pragma region Objet audios
-    AudioSynthWaveform       mesOscs[6];       //combinaison d'oscillateurs,
+    #if !InputTDM
+    AudioSynthWaveform       mesOscs[6];       // combinaison d'oscillateurs
+    #endif
+
     AudioEffectDrive         mesDistos[6];     // reverb, distos et delays pour chaque corde
     AudioEffectDelayMod      mesDelays[6];     
     AudioEffectRev           mesReverbs[6];    
@@ -24,23 +36,53 @@
     AudioMixer4              mixerL_5et6;  
     AudioMixer4              masterL;      
 
+    // --- Analyseurs de pic pour le signal des cordes ---
+    AudioAnalyzePeak         stringPeaks[6];
+    // -------------------------------------------------------------
+
     AudioMixer4              mixerR_1a4;   
     AudioMixer4              mixerR_5et6;  
     AudioMixer4              masterR;      
 
+    #if OutputUSB
     AudioOutputUSB           usbOut;           // Sortie audio de la teensy
+    #endif
+
+    #if InputTDM || OutputTDM
+    DMAMEM AudioControlCS42448 cs42448_1;      // Contrôleur matériel CS42448
+    #endif
+    
+    #if InputTDM
+    AudioInputTDM            inputTDM;         // Entrée TDM depuis la guitare
+    #endif
+
+    #if InputTDM || OutputTDM
+    AudioOutputTDM           outputTDM;       
+    #endif
+
     #pragma endregion
 
     #pragma region Connexions audio 
     //Source, Port de Sortie, Desrtination, Port d'Entrée)
-    // Oscillateur dans la Disto
+    
+    #if InputTDM == 0
     AudioConnection p_osc_dist0(mesOscs[0], 0, mesDistos[0], 0);
     AudioConnection p_osc_dist1(mesOscs[1], 0, mesDistos[1], 0);
     AudioConnection p_osc_dist2(mesOscs[2], 0, mesDistos[2], 0);
     AudioConnection p_osc_dist3(mesOscs[3], 0, mesDistos[3], 0);
     AudioConnection p_osc_dist4(mesOscs[4], 0, mesDistos[4], 0);
     AudioConnection p_osc_dist5(mesOscs[5], 0, mesDistos[5], 0);
+    #else
+    AudioConnection p_tdm_dist0(inputTDM, 10, mesDistos[0], 0);
+    AudioConnection p_tdm_dist1(inputTDM, 8,  mesDistos[1], 0);
+    AudioConnection p_tdm_dist2(inputTDM, 6,  mesDistos[2], 0);
+    AudioConnection p_tdm_dist3(inputTDM, 4,  mesDistos[3], 0);
+    AudioConnection p_tdm_dist4(inputTDM, 2,  mesDistos[4], 0);
+    AudioConnection p_tdm_dist5(inputTDM, 0,  mesDistos[5], 0);
+    #endif
 
+
+    #if !SoloEffect
     // Disto dans Earth
     AudioConnection p_dist_earth0(mesDistos[0], 0, EffetEarth[0], 0);
     AudioConnection p_dist_earth1(mesDistos[1], 0, EffetEarth[1], 0);
@@ -58,13 +100,14 @@
     AudioConnection p_earth_dly5(EffetEarth[5], 0, mesDelays[5], 0);
 
     // Delay dans la Reverb (entrée L/Mono de la Reverb)
-    AudioConnection p_dly_rev0(mesDelays[0], 0, mesReverbs[0], 0);
-    AudioConnection p_dly_rev1(mesDelays[1], 0, mesReverbs[1], 0);
-    AudioConnection p_dly_rev2(mesDelays[2], 0, mesReverbs[2], 0);
-    AudioConnection p_dly_rev3(mesDelays[3], 0, mesReverbs[3], 0);
-    AudioConnection p_dly_rev4(mesDelays[4], 0, mesReverbs[4], 0);
-    AudioConnection p_dly_rev5(mesDelays[5], 0, mesReverbs[5], 0);
+    AudioConnection p_dly_rev0(mesDelays[0], 0, mixerR_1a4, 0);
+    AudioConnection p_dly_rev1(mesDelays[1], 0, mixerR_1a4, 1);
+    AudioConnection p_dly_rev2(mesDelays[2], 0, mixerR_1a4, 2);
+    AudioConnection p_dly_rev3(mesDelays[3], 0, mixerR_1a4, 3);
+    AudioConnection p_dly_rev4(mesDelays[4], 0, mixerR_5et6, 0);
+    AudioConnection p_dly_rev5(mesDelays[5], 0, mixerR_5et6, 1);
 
+    /*
     // Reverb gauche (entrée 0) dans le mixer Mixers gauche
     AudioConnection p_rev0_L(mesReverbs[0], 0, mixerL_1a4, 0);
     AudioConnection p_rev1_L(mesReverbs[1], 0, mixerL_1a4, 1);
@@ -80,6 +123,49 @@
     AudioConnection p_rev3_R(mesReverbs[3], 1, mixerR_1a4, 3);
     AudioConnection p_rev4_R(mesReverbs[4], 1, mixerR_5et6, 0);
     AudioConnection p_rev5_R(mesReverbs[5], 1, mixerR_5et6, 1);
+    // // ------------------------------------------------------------------ */
+
+    #else
+    // #if !InputTDM
+    // AudioConnection p_in_earth0(mesOscs[0], 0, EffetEarth[0], 0);
+    // AudioConnection p_in_earth1(mesOscs[1], 0, EffetEarth[1], 0);
+    // AudioConnection p_in_earth2(mesOscs[2], 0, EffetEarth[2], 0);
+    // AudioConnection p_in_earth3(mesOscs[3], 0, EffetEarth[3], 0);
+    // AudioConnection p_in_earth4(mesOscs[4], 0, EffetEarth[4], 0);
+    // AudioConnection p_in_earth5(mesOscs[5], 0, EffetEarth[5], 0);
+    
+    // AudioConnection p_in_peak0(mesOscs[0], 0, stringPeaks[0], 0);
+    // AudioConnection p_in_peak1(mesOscs[1], 0, stringPeaks[1], 0);
+    // AudioConnection p_in_peak2(mesOscs[2], 0, stringPeaks[2], 0);
+    // AudioConnection p_in_peak3(mesOscs[3], 0, stringPeaks[3], 0);
+    // AudioConnection p_in_peak4(mesOscs[4], 0, stringPeaks[4], 0);
+    // AudioConnection p_in_peak5(mesOscs[5], 0, stringPeaks[5], 0);
+    // #else
+    // AudioConnection p_in_earth0(inputTDM, 10, EffetEarth[0], 0);
+    // AudioConnection p_in_earth1(inputTDM, 8,  EffetEarth[1], 0);
+    // AudioConnection p_in_earth2(inputTDM, 6,  EffetEarth[2], 0);
+    // AudioConnection p_in_earth3(inputTDM, 4,  EffetEarth[3], 0);
+    // AudioConnection p_in_earth4(inputTDM, 2,  EffetEarth[4], 0);
+    // AudioConnection p_in_earth5(inputTDM, 0,  EffetEarth[5], 0);
+
+    // AudioConnection p_in_peak0(inputTDM, 10, stringPeaks[0], 0);
+    // AudioConnection p_in_peak1(inputTDM, 8,  stringPeaks[1], 0);
+    // AudioConnection p_in_peak2(inputTDM, 6,  stringPeaks[2], 0);
+    // AudioConnection p_in_peak3(inputTDM, 4,  stringPeaks[3], 0);
+    // AudioConnection p_in_peak4(inputTDM, 2,  stringPeaks[4], 0);
+    // AudioConnection p_in_peak5(inputTDM, 0,  stringPeaks[5], 0);
+    // #endif
+
+    // // Earth -> Mixers L & R (On duplique le signal mono d'Earth sur les bus L et R)
+    // AudioConnection p_earth_mixL0(EffetEarth[0], 0, mixerL_1a4, 0);   AudioConnection p_earth_mixR0(EffetEarth[0], 0, mixerR_1a4, 0);
+    // AudioConnection p_earth_mixL1(EffetEarth[1], 0, mixerL_1a4, 1);   AudioConnection p_earth_mixR1(EffetEarth[1], 0, mixerR_1a4, 1);
+    // AudioConnection p_earth_mixL2(EffetEarth[2], 0, mixerL_1a4, 2);   AudioConnection p_earth_mixR2(EffetEarth[2], 0, mixerR_1a4, 2);
+    // AudioConnection p_earth_mixL3(EffetEarth[3], 0, mixerL_1a4, 3);   AudioConnection p_earth_mixR3(EffetEarth[3], 0, mixerR_1a4, 3);
+    // AudioConnection p_earth_mixL4(EffetEarth[4], 0, mixerL_5et6, 0);  AudioConnection p_earth_mixR4(EffetEarth[4], 0, mixerR_5et6, 0);
+    // AudioConnection p_earth_mixL5(EffetEarth[5], 0, mixerL_5et6, 1);  AudioConnection p_earth_mixR5(EffetEarth[5], 0, mixerR_5et6, 1);
+    // // -----------------------------------------------------------------
+    #endif
+
 
     // Mixers sous-groupes dans le Masters
     AudioConnection p_mastL1(mixerL_1a4, 0, masterL, 0);
@@ -87,9 +173,15 @@
     AudioConnection p_mastR1(mixerR_1a4, 0, masterR, 0);
     AudioConnection p_mastR2(mixerR_5et6, 0, masterR, 1);
 
-    // Masters -> USB 
-    AudioConnection p_outL(masterL, 0, usbOut, 0);
-    AudioConnection p_outR(masterR, 0, usbOut, 1);
+    // Masters -> Sorties
+    #if OutputUSB
+    AudioConnection p_outL_usb(masterL, 0, usbOut, 0);
+    AudioConnection p_outR_usb(masterR, 0, usbOut, 1);
+    #endif
+    #if OutputTDM
+    AudioConnection p_outL_tdm(masterL, 0, outputTDM, 14); // Sortie Analogique Gauche
+    AudioConnection p_outR_tdm(masterR, 0, outputTDM, 12); // Sortie Analogique Droite
+    #endif
     #pragma endregion
 
     
@@ -102,17 +194,44 @@
     bool cordeMute[6] = {false, false, false, false, false, false};
     bool globalBypass = false;
 
+    const int reset_p = 2; 
+
     void setup() {
         pinMode(13, OUTPUT); // NOUVEAU : LED de statut MIDI
-        Serial.begin(9600);
+        Serial.begin(115200);
 
-        AudioMemory(120); // on alloue une mémoire suffisante 
+        AudioMemory(1500); // on alloue une mémoire suffisante 
+
+        #if InputTDM || OutputTDM
+        
+        //CTRL_UART.begin(115200);
+        
+        pinMode(reset_p, OUTPUT);                                    
+        //Power-Up Sequence
+        digitalWrite(reset_p, LOW);
+        delay(800);
+        digitalWrite(reset_p, HIGH);
+
+        if (cs42448_1.enable()) {
+            Serial.println("configured CS42448");
+        } else {
+            Serial.println("failed to config CS42448");
+        }
+        
+        cs42448_1.inputLevel(1);
+        cs42448_1.volume(1.0);
+
+
+
+        #endif
 
         #pragma region Initialisation des effets et oscillateurs
         for (int i = 0; i < 6; i++) {
+            #if InputTDM == 0
             mesOscs[i].begin(WAVEFORM_TRIANGLE);
             mesOscs[i].amplitude(volumesCordes[i]);
             mesOscs[i].frequency(frequencesGuitare[i]);
+            #endif
             
             // Initialisation de la Disto
             mesDistos[i].begin(2048);
@@ -123,8 +242,8 @@
             mesDelays[i].setMix(0.0f); // Par défaut bypass
 
             // Initialisation de la Reverb
-            mesReverbs[i].begin();
-            mesReverbs[i].setMix(0.0f); // Par défaut bypass
+            EffetEarth[i].SetMix(0.0f);
+            // --------------------------------------------------------- 
         }
         #pragma endregion
 
@@ -135,31 +254,51 @@
         unsigned long tempsActuel = millis(); // temps actuel en ms depuis le démarrage du programme
         static unsigned long lastHeartbeat = 0;
 
-        // Heartbeat : Prouve que la Teensy tourne et écoute
-        if (tempsActuel - lastHeartbeat >= 1000) {
+        // Heartbeat : Affichage régulier des diagnostics
+        // NOUVEAU : Passé de 5ms à 500ms. 5ms saturait le port USB Série et bloquait complètement la Teensy !
+        if (tempsActuel - lastHeartbeat >= 500) { 
             lastHeartbeat = tempsActuel;
-            Serial.print("Charge CPU Audio Actuelle : ");
-            Serial.print(AudioProcessorUsage());
-            Serial.println(" %");
+            /*
+            // Serial.print("Charge CPU Audio Actuelle : ");
+            // Serial.print(AudioProcessorUsage());
+            // Serial.println(" %");
 
-            Serial.print("Charge CPU Audio Max : ");
-            Serial.print(AudioProcessorUsageMax());
-            Serial.println(" %");
+            // Serial.print("Charge CPU Audio Max : ");
+            // Serial.print(AudioProcessorUsageMax());
+            // Serial.println(" %");
+
+            // Serial.print("Niveaux Signal Cordes (Brut) : ");
+            // for (int i = 0; i < 6; i++) {
+            //     if (stringPeaks[i].available()) {
+            //         float val = stringPeaks[i].read(); // Valeur brute (0.0 à 1.0)
+            //         Serial.print(val, 4);              // Affichage avec 4 décimales
+            //     } else {
+            //         Serial.print("N/A");               // Indique si le flux audio est bloqué
+            //     }
+            //     if (i < 5) Serial.print(" | ");
+            // }
+            // Serial.println();
+            // // --------------------------------------------------
+            */
+            
             digitalWrite(13, !digitalRead(13)); // Clignotement lent
         }
 
         while (usbMIDI.read()) {
-            Serial.print(">>> MSG MIDI BRUT Recu ! Type : ");
-            Serial.print(usbMIDI.getType());
-            Serial.print(" | Data 1 : ");
-            Serial.print(usbMIDI.getData1());
-            Serial.print(" | Data 2 : ");
-            Serial.println(usbMIDI.getData2());
+            // On ignore les messages de synchronisation (Clock) et ActiveSensing 
+            // qui spamment le port série des centaines de fois par seconde et bloquent la Teensy
+            /*if (usbMIDI.getType() != usbMIDI.Clock && usbMIDI.getType() != usbMIDI.ActiveSensing) {
+                Serial.print(">>> MSG MIDI BRUT Recu ! Type : ");
+                Serial.print(usbMIDI.getType());
+                Serial.print(" | Data 1 : ");
+                Serial.print(usbMIDI.getData1());
+                Serial.print(" | Data 2 : ");
+                Serial.println(usbMIDI.getData2());
+            }*/
         }
 
 
-
-        
+#if !InputTDM
         if (tempsActuel - tempsDerniereNote >= 400) { // on joue une corde toutes les 400 ms
             tempsDerniereNote = tempsActuel;  
             if (!cordeMute[cordeCourante]) {         // On ne joue la corde QUE si elle n'est pas muette
@@ -179,8 +318,10 @@
                 mesOscs[i].amplitude(volumesCordes[i]);
             }
         }
+#endif
 
         delay(2);
+
     }
 
     void OnControlChange(byte channel, byte control, byte value) {
@@ -219,10 +360,12 @@
                 if (potard == 3) mesDelays[corde].setModRate(valNorm * 5.0f);
                 if (potard == 4) mesDelays[corde].setModDepthMs(valNorm * 10.0f);
             }
+            EffetEarth[corde].setEnabled(!globalBypass);
+            mesDistos[corde].setEnabled(!globalBypass);
         }
         
         // --- TRANCHE 2 : DISTORTION (CC 50 à 85) ---
-        else if (control >= 50 && control <= 85) {
+        else if (control >= 50 && control <= 85) { 
             int ccRelatif = control - 50;
             int corde = ccRelatif / 6;
             int potard = ccRelatif % 6;
@@ -241,6 +384,8 @@
                 if (potard == 1) mesDistos[corde].setToneHz(800.0f + valNorm * 7200.0f);  // Tone
                 if (potard == 2) mesDistos[corde].setMix(valNorm);                        // Mix
             }
+            EffetEarth[corde].setEnabled(!globalBypass);
+            mesDelays[corde].setEnabled(!globalBypass);
         }
 
         // --- TRANCHE 3 : EARTH (CC 90 à 125 - Remplace la Reverb) ---
@@ -256,11 +401,15 @@
                 Serial.print(" | Potard: P");
                 Serial.print(potard + 1);
                 Serial.print(" | Valeur: ");
-                Serial.println(value);
+                Serial.print(value);
+                Serial.print(" | Valeur Normalisé: ");
+                Serial.println(valNorm);
 
                 if (potard == 0) EffetEarth[corde].SetMix(valNorm);
                 // if (potard == 1) EffetEarth[corde].SetParameter(1, valNorm); // Sélection du mode d'octave
             }
+            mesDistos[corde].setEnabled(!globalBypass);
+            mesDelays[corde].setEnabled(!globalBypass);
         }
 
         // --- TRANCHE 4 : MUTE DES CORDES INDIVIDUELLES (CC 0 à 5) ---
@@ -268,8 +417,13 @@
             int corde = control;
             cordeMute[corde] = (value > 63); // Convertit MIDI(0-127) en Booléen
             if (cordeMute[corde]) {          // Si on mute, on coupe le son instantanément
+                #if !InputTDM
                 volumesCordes[corde] = 0.0f;
                 mesOscs[corde].amplitude(0.0f);
+                #else
+                // En TDM (micro guitare live), pour muter il faudrait agir sur le gain
+                // de la disto ou ajouter un objet AudioAmplifier pour chaque corde.
+                #endif
             }
         }
         
@@ -277,9 +431,11 @@
         else if (control == 126) {
             globalBypass = (value > 63);
             for (int i = 0; i < 6; i++) {
+                /* 
                 mesDistos[i].setEnabled(!globalBypass);
                 mesDelays[i].setEnabled(!globalBypass);
                 mesReverbs[i].setEnabled(!globalBypass);
+                ---------------------- */
                 EffetEarth[i].setEnabled(!globalBypass);
             }
         }
