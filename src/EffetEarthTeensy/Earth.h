@@ -71,7 +71,7 @@ class EarthEffect : public AudioStream {
     float updateTest(const float in, float out, int idx) override;
 #endif
 
-    void SetMix(float mix);                // Ctrl 2 (0.0 -> 1.0)
+    void setMix(float mix);                // Ctrl 2 (0.0 -> 1.0)
     
     void SetOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
     void SetFootswitchAction(int action);  // 3-Way Switch 3 (1, 2)

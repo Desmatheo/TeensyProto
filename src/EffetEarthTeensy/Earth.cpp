@@ -43,7 +43,7 @@ EarthEffect::EarthEffect()
         buff_out[j] = 0.0f;
     }
 
-    SetMix(1.0f);
+    setMix(1.0f);
     SetOctaveMode(1);
 
 #ifndef TEENSY
@@ -226,7 +226,7 @@ void EarthEffect::update() {
 
 // --- Implémentation des Setters Spécifiques ---
 
-void EarthEffect::SetMix(float mix) {
+void EarthEffect::setMix(float mix) {
     dryMix = 1.0f - mix;
     wetMix = mix;
 }
@@ -248,12 +248,16 @@ void EarthEffect::SetMomentaryAction(bool active) {
 }
 
 void EarthEffect::SetParameter(int param_id, float value) {
-    if (param_id == 0) {
-        SetMix(value);
-    } else if (param_id == 1) {
-        if (value > 0.66f) SetOctaveMode(1);
-        else if ((0.66f > value) && (value > 0.33f)) SetOctaveMode(2);
-        else SetOctaveMode(3);
-    }
-
+    switch (param_id){
+        case 0 : 
+            setMix(value);
+            break;
+        case 1 :  
+            if (value > 0.66f) SetOctaveMode(1);
+            else if ((0.66f > value) && (value > 0.33f)) SetOctaveMode(2);
+            else SetOctaveMode(3);
+        default:
+            Serial.print("Parametre invalide");
+            Serial.println(param_id);
+    };
 }
