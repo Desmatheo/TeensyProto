@@ -57,18 +57,27 @@ bool AudioEffectDelayMod::begin(uint32_t max_delay_ms) {
 }
 
 // ---- Setters ----
-void AudioEffectDelayMod::setTimeMs(float ms)      { time_ms_      = clampf(ms, 0.0f, 750.0f); }
-void AudioEffectDelayMod::setFeedback(float fb)    { feedback_     = clampf(fb, 0.0f, 1.0f); }
+void AudioEffectDelayMod::setTimeMs(float ms)      { 
+    time_ms_      = clampf(ms, 0.0f, 750.0f); 
+    Serial.print("Delay time fait !");
+}
+void AudioEffectDelayMod::setFeedback(float fb)    { 
+    feedback_     = clampf(fb, 0.0f, 1.0f); 
+    Serial.print("Delay Feedback fait !");
+}
 
 // mix utilisateur + mise à jour du mix effectif (ON/OFF)
 void AudioEffectDelayMod::setMix(float mix) {
     mix_        = clampf(mix, 0.0f, 1.0f);
-    active_mix_ = enabled_ ? mix_ : 0.0f;
+    active_mix_ = active ? mix_ : 0.0f;
+    Serial.print("Delay Mix fait !");
 }
 
 void AudioEffectDelayMod::setModRate(float hz)     { mod_rate_hz_  = clampf(hz, 0.0f, 5.0f); updateLfoDphase(); }
 void AudioEffectDelayMod::setModDepthMs(float ms)  { mod_depth_ms_ = clampf(ms, 0.0f, 10.0f); }
 
+
+// Ancienne version Proto Projet Yes
 void AudioEffectDelayMod::setParams(float time_ms, float fb, float mix, float rate_hz, float depth_ms) {
     setTimeMs(time_ms);
     setFeedback(fb);
@@ -76,6 +85,31 @@ void AudioEffectDelayMod::setParams(float time_ms, float fb, float mix, float ra
     setModRate(rate_hz);
     setModDepthMs(depth_ms);
 }
+
+// Nouvelle version Proto 
+void AudioEffectDelayMod::setParameter(int param_id, float value) {
+    switch (param_id){
+        case 0: 
+            setMix(value);
+            break;
+        case 1: 
+            setTimeMs(value);
+            break;
+        case 2 : 
+            setFeedback(value);
+            break;
+        case 3 : 
+            setModRate(value);
+            break;
+        case 4 : 
+            setModDepthMs(value);
+            break;
+        default : 
+            Serial.print("Parametre invalide");
+            Serial.println(param_id);
+    };
+}
+
 
 // ---- Traitement audio ----
 void AudioEffectDelayMod::update() {

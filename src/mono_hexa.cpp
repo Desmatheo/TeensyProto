@@ -242,7 +242,7 @@
             mesDelays[i].setMix(0.0f); // Par défaut bypass
 
             // Initialisation de la Reverb
-            EffetEarth[i].SetMix(0.0f);
+            EffetEarth[i].setMix(0.0f);
             // --------------------------------------------------------- 
         }
         #pragma endregion
@@ -280,7 +280,11 @@
             // Serial.println();
             // // --------------------------------------------------
             */
-            
+                
+            Serial.print("Delay actif Premiere corde : ");
+            Serial.print(mesDelays[0].isEnabled());
+            Serial.print(" Delay Mix Premiere corde : ");
+            Serial.println(mesDelays[0].getMix());
             digitalWrite(13, !digitalRead(13)); // Clignotement lent
         }
 
@@ -297,12 +301,6 @@
             }*/
         }
 
-        Serial.print("Earth actif Premiere corde : ");
-        Serial.println(EffetEarth[0].isEnabled());
-        Serial.print("Earth Mix Premiere corde : ");
-        Serial.print(EffetEarth[0].wetMix);
-        Serial.print("Earth Octave Premiere corde : ");
-        Serial.println(EffetEarth[0].effect_mode);
 
 
 #if !InputTDM
@@ -338,13 +336,6 @@
         int corde = ccRelatif / 6;
         int potard = ccRelatif % 6;
 
-        Serial.print(control);
-        Serial.print(' ');
-        Serial.print(corde);
-        Serial.print(' ');
-        Serial.print(potard);
-        Serial.println();
-
         // --- TRANCHE 1 : DELAY (CC 10 à 45) ---
         if (control >= 10 && control <= 45) {
             int ccRelatif = control - 10;
@@ -361,12 +352,14 @@
                 Serial.print(" | Valeur: ");
                 Serial.println(value);
 
-                // Application du paramètre sur la corde ciblée uniquement
-                if (potard == 0) mesDelays[corde].setTimeMs(valNorm * 750.0f);
-                if (potard == 1) mesDelays[corde].setFeedback(valNorm * 0.95f);
-                if (potard == 2) mesDelays[corde].setMix(valNorm);
-                if (potard == 3) mesDelays[corde].setModRate(valNorm * 5.0f);
-                if (potard == 4) mesDelays[corde].setModDepthMs(valNorm * 10.0f);
+                mesDelays[corde].setParameter(potard, valNorm);
+
+                // // Application du paramètre sur la corde ciblée uniquement
+                // if (potard == 0) mesDelays[corde].setTimeMs(valNorm * 750.0f);
+                // if (potard == 1) mesDelays[corde].setFeedback(valNorm * 0.95f);
+                // if (potard == 2) mesDelays[corde].setMix(valNorm);
+                // if (potard == 3) mesDelays[corde].setModRate(valNorm * 5.0f);
+                // if (potard == 4) mesDelays[corde].setModDepthMs(valNorm * 10.0f);
             }
             EffetEarth[corde].setEnabled(false);
             mesDistos[corde].setEnabled(false);
@@ -418,8 +411,7 @@
                 Serial.print(" | Valeur Normalisé: ");
                 Serial.println(valNorm);
 
-                if (potard == 0) EffetEarth[corde].SetMix(valNorm);
-                if (potard == 1) EffetEarth[corde].SetParameter(1, valNorm); // Sélection du mode d'octave
+                EffetEarth[corde].setParameter(potard, valNorm);
             }
             mesDistos[corde].setEnabled(false);
             mesDelays[corde].setEnabled(false);
@@ -427,17 +419,17 @@
 
         // --- TRANCHE 4 : MUTE DES CORDES INDIVIDUELLES (CC 0 à 5) ---
         else if (control >= 0 && control <= 5) {
-            int corde = control;
-            cordeMute[corde] = (value > 63); // Convertit MIDI(0-127) en Booléen
-            if (cordeMute[corde]) {          // Si on mute, on coupe le son instantanément
-                #if !InputTDM
-                volumesCordes[corde] = 0.0f;
-                mesOscs[corde].amplitude(0.0f);
-                #else
-                // En TDM (micro guitare live), pour muter il faudrait agir sur le gain
-                // de la disto ou ajouter un objet AudioAmplifier pour chaque corde.
-                #endif
+            for (int i = 0; i < 6; i++) {
+                mesDistos[i].setEnabled(false);
+                mesDelays[i].setEnabled(false);
+                EffetEarth[i].setEnabled(false);
             }
+            // if (cordeMute[corde]) {          // Si on mute, on coupe le son instantanément
+            //     #if !InputTDM
+            //     volumesCordes[corde] = 0.0f;
+            //     mesOscs[corde].amplitude(0.0f);
+            //     #endif
+            // }
         }
         
         // --- TRANCHE 5 : BYPASS GLOBAL (CC 126) ---
@@ -446,7 +438,7 @@
                 mesDistos[i].setEnabled(false);
                 mesDelays[i].setEnabled(false);
                 EffetEarth[i].setEnabled(true);
-                EffetEarth[i].SetMix(0.0f);
+                EffetEarth[i].setMix(0.0f);
             }
         }
     }
