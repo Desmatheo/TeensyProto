@@ -192,7 +192,7 @@
     
     // --- NOUVELLES VARIABLES MUTE ET BYPASS ---
     bool cordeMute[6] = {false, false, false, false, false, false};
-    bool globalBypass = false;
+    bool Bypass = false;
 
     const int reset_p = 2; 
 
@@ -297,6 +297,13 @@
             }*/
         }
 
+        Serial.print("Earth actif Premiere corde : ");
+        Serial.println(EffetEarth[0].isEnabled());
+        Serial.print("Earth Mix Premiere corde : ");
+        Serial.print(EffetEarth[0].wetMix);
+        Serial.print("Earth Octave Premiere corde : ");
+        Serial.println(EffetEarth[0].effect_mode);
+
 
 #if !InputTDM
         if (tempsActuel - tempsDerniereNote >= 400) { // on joue une corde toutes les 400 ms
@@ -345,6 +352,7 @@
             int potard = ccRelatif % 6; // Reste -> Donne le bouton (0 à 5)
 
             if (corde >= 0 && corde < 6) {
+                mesDelays[corde].setEnabled(true);
                 // Affichage mouchard dans la console VS Code
                 Serial.print("MIDI -> Effet: DELAY | Corde: ");
                 Serial.print(corde);
@@ -360,8 +368,8 @@
                 if (potard == 3) mesDelays[corde].setModRate(valNorm * 5.0f);
                 if (potard == 4) mesDelays[corde].setModDepthMs(valNorm * 10.0f);
             }
-            EffetEarth[corde].setEnabled(!globalBypass);
-            mesDistos[corde].setEnabled(!globalBypass);
+            EffetEarth[corde].setEnabled(false);
+            mesDistos[corde].setEnabled(false);
         }
         
         // --- TRANCHE 2 : DISTORTION (CC 50 à 85) ---
@@ -371,6 +379,8 @@
             int potard = ccRelatif % 6;
 
             if (corde >= 0 && corde < 6) {
+
+                mesDistos[corde].setEnabled(true);
                 // Affichage mouchard dans la console VS Code
                 Serial.print("MIDI -> Effet: DELAY | Corde: ");
                 Serial.print(corde);
@@ -384,8 +394,8 @@
                 if (potard == 1) mesDistos[corde].setToneHz(800.0f + valNorm * 7200.0f);  // Tone
                 if (potard == 2) mesDistos[corde].setMix(valNorm);                        // Mix
             }
-            EffetEarth[corde].setEnabled(!globalBypass);
-            mesDelays[corde].setEnabled(!globalBypass);
+            EffetEarth[corde].setEnabled(false);
+            mesDelays[corde].setEnabled(false);
         }
 
         // --- TRANCHE 3 : EARTH (CC 90 à 125 - Remplace la Reverb) ---
@@ -394,7 +404,10 @@
             int corde = ccRelatif / 6;
             int potard = ccRelatif % 6;
 
+
             if (corde >= 0 && corde < 6) {
+
+                EffetEarth[corde].setEnabled(true);
                 // Affichage mouchard dans la console VS Code
                 Serial.print("MIDI -> Effet: DELAY | Corde: ");
                 Serial.print(corde);
@@ -406,10 +419,10 @@
                 Serial.println(valNorm);
 
                 if (potard == 0) EffetEarth[corde].SetMix(valNorm);
-                // if (potard == 1) EffetEarth[corde].SetParameter(1, valNorm); // Sélection du mode d'octave
+                if (potard == 1) EffetEarth[corde].SetParameter(1, valNorm); // Sélection du mode d'octave
             }
-            mesDistos[corde].setEnabled(!globalBypass);
-            mesDelays[corde].setEnabled(!globalBypass);
+            mesDistos[corde].setEnabled(false);
+            mesDelays[corde].setEnabled(false);
         }
 
         // --- TRANCHE 4 : MUTE DES CORDES INDIVIDUELLES (CC 0 à 5) ---
@@ -429,14 +442,11 @@
         
         // --- TRANCHE 5 : BYPASS GLOBAL (CC 126) ---
         else if (control == 126) {
-            globalBypass = (value > 63);
             for (int i = 0; i < 6; i++) {
-                /* 
-                mesDistos[i].setEnabled(!globalBypass);
-                mesDelays[i].setEnabled(!globalBypass);
-                mesReverbs[i].setEnabled(!globalBypass);
-                ---------------------- */
-                EffetEarth[i].setEnabled(!globalBypass);
+                mesDistos[i].setEnabled(false);
+                mesDelays[i].setEnabled(false);
+                EffetEarth[i].setEnabled(true);
+                EffetEarth[i].SetMix(0.0f);
             }
         }
     }

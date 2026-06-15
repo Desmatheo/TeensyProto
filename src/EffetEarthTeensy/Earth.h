@@ -89,12 +89,12 @@ class EarthEffect : public AudioStream {
 #ifdef TEENSY
 
     // ON/OFF soft basé sur le mix
-    void setEnabled(bool e)          { enabled_ = e; wetMix = enabled_ ? wetMix : 0.0f; }
-    bool isEnabled() const           { return enabled_; }
+    void setEnabled(bool e)          { active = e;}
+    bool isEnabled() const           { return active; }
 
 private:
 
-    bool  enabled_      = true;      // effet actif ou non
+    bool  active      = false;      // effet actif ou non
     audio_block_t* inputQueueArray_[1];
 #endif
 };

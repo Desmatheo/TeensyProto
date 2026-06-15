@@ -149,6 +149,10 @@ float EarthEffect::updateTest(const float in, float out, int idx) {
 }
 #else
 void EarthEffect::update() {
+    // Pour éviter de faire le gros calcul DSP quand l'effet n'est pas actif.
+    if (!active) return;
+
+
     audio_block_t* in = receiveReadOnly(0);
     if (!in) return;
 
