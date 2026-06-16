@@ -110,6 +110,17 @@ void AudioEffectDelayMod::setParameter(int param_id, float value) {
     };
 }
 
+void AudioEffectDelayMod::setEnabled(bool e) {
+    if (e && !active) {
+        // Vidage du buffer à la réactivation pour éviter de relire un "vieux" bout de son
+        if (buffer_ && buf_len_ > 0) {
+            memset(buffer_, 0, buf_len_ * sizeof(int16_t));
+        }
+    }
+    active = e;
+    active_mix_ = active ? mix_ : 0.0f;
+}
+
 
 // ---- Traitement audio ----
 void AudioEffectDelayMod::update() {
@@ -119,14 +130,9 @@ void AudioEffectDelayMod::update() {
     audio_block_t* in = receiveReadOnly(0);
     if (!in) return;
 
-    if (!ready_) {
-        // Effet non prêt -> pass-through dry
-        audio_block_t* out = allocate();
-        if (out) {
-            memcpy(out->data, in->data, sizeof(out->data));
-            transmit(out, 0);
-            release(out);
-        }
+    if (!active || !ready_) {
+        // Effet inactif ou non prêt -> Bypass (pass-through direct sans utiliser le CPU)
+        transmit(in, 0);
         release(in);
         return;
     }

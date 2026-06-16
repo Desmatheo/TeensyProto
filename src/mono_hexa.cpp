@@ -5,17 +5,20 @@
 #include "AudioEffectDrive.h"
 #include "AudioEffectRev.h"
 #include "EffetEarthTeensy/Earth.h"
+#include "EffetDelayTeensy/Delay.h"
 
 #define MODE_HEXAPHONIQUE
 
 #ifdef MODE_HEXAPHONIQUE
 
-    // --- CONFIGURATION DES ENTREES/SORTIES ---
+    // --- CONFIGURATION ---
     #define InputTDM 1    // 1: Entrée Guitare (TDM), 0: Séquenceur d'Oscillateurs
     #if InputTDM
     #define OutputTDM 1   // 1: Sortie Jack CS42448 (TDM), 0: Désactivé
     #endif
     #define OutputUSB 1   // 1: Sortie Casque/PC (USB), 0: Désactivé
+    #define DelayPaulo 0
+
     // -----------------------------------------
 
     void OnControlChange(byte channel, byte control, byte value);
@@ -26,7 +29,11 @@
     #endif
 
     AudioEffectDrive         mesDistos[6];     // reverb, distos et delays pour chaque corde
+    #if DelayPaulo
     AudioEffectDelayMod      mesDelays[6];     
+    #else 
+    DelayEffect              mesDelays[6];
+    #endif
     AudioEffectRev           mesReverbs[6];    
     EarthEffect              EffetEarth[6];
     
@@ -73,25 +80,23 @@
     AudioConnection p_osc_dist4(mesOscs[4], 0, mesDistos[4], 0);
     AudioConnection p_osc_dist5(mesOscs[5], 0, mesDistos[5], 0);
     #else
-    AudioConnection p_tdm_dist0(inputTDM, 10, mesDistos[0], 0);
-    AudioConnection p_tdm_dist1(inputTDM, 8,  mesDistos[1], 0);
-    AudioConnection p_tdm_dist2(inputTDM, 6,  mesDistos[2], 0);
-    AudioConnection p_tdm_dist3(inputTDM, 4,  mesDistos[3], 0);
-    AudioConnection p_tdm_dist4(inputTDM, 2,  mesDistos[4], 0);
-    AudioConnection p_tdm_dist5(inputTDM, 0,  mesDistos[5], 0);
+    AudioConnection p_tdm_dist0(inputTDM, 10, EffetEarth[0], 0);
+    AudioConnection p_tdm_dist1(inputTDM, 8,  EffetEarth[1], 0);
+    AudioConnection p_tdm_dist2(inputTDM, 6,  EffetEarth[2], 0);
+    AudioConnection p_tdm_dist3(inputTDM, 4,  EffetEarth[3], 0);
+    AudioConnection p_tdm_dist4(inputTDM, 2,  EffetEarth[4], 0);
+    AudioConnection p_tdm_dist5(inputTDM, 0,  EffetEarth[5], 0);
     #endif
 
 
     #if !SoloEffect
-    // Disto dans Earth
-    AudioConnection p_dist_earth0(mesDistos[0], 0, EffetEarth[0], 0);
-    AudioConnection p_dist_earth1(mesDistos[1], 0, EffetEarth[1], 0);
-    AudioConnection p_dist_earth2(mesDistos[2], 0, EffetEarth[2], 0);
-    AudioConnection p_dist_earth3(mesDistos[3], 0, EffetEarth[3], 0);
-    AudioConnection p_dist_earth4(mesDistos[4], 0, EffetEarth[4], 0);
-    AudioConnection p_dist_earth5(mesDistos[5], 0, EffetEarth[5], 0);
+    // AudioConnection p_dist_earth0(mesDistos[0], 0, EffetEarth[0], 0);
+    // AudioConnection p_dist_earth1(mesDistos[1], 0, EffetEarth[1], 0);
+    // AudioConnection p_dist_earth2(mesDistos[2], 0, EffetEarth[2], 0);
+    // AudioConnection p_dist_earth3(mesDistos[3], 0, EffetEarth[3], 0);
+    // AudioConnection p_dist_earth4(mesDistos[4], 0, EffetEarth[4], 0);
+    // AudioConnection p_dist_earth5(mesDistos[5], 0, EffetEarth[5], 0);
 
-    // Earth dans le Delay
     AudioConnection p_earth_dly0(EffetEarth[0], 0, mesDelays[0], 0);
     AudioConnection p_earth_dly1(EffetEarth[1], 0, mesDelays[1], 0);
     AudioConnection p_earth_dly2(EffetEarth[2], 0, mesDelays[2], 0);
@@ -99,7 +104,6 @@
     AudioConnection p_earth_dly4(EffetEarth[4], 0, mesDelays[4], 0);
     AudioConnection p_earth_dly5(EffetEarth[5], 0, mesDelays[5], 0);
 
-    // Delay dans la Reverb (entrée L/Mono de la Reverb)
     AudioConnection p_dly_rev0(mesDelays[0], 0, mixerR_1a4, 0);
     AudioConnection p_dly_rev1(mesDelays[1], 0, mixerR_1a4, 1);
     AudioConnection p_dly_rev2(mesDelays[2], 0, mixerR_1a4, 2);
@@ -238,7 +242,11 @@
             mesDistos[i].setMix(0.0f); // Par défaut bypass
             
             // Initialisation de chaque delay
+            #if DelayPaulo
             mesDelays[i].begin(800);
+            #else
+            mesDelays[i].begin();
+            #endif
             mesDelays[i].setMix(0.0f); // Par défaut bypass
 
             // Initialisation de la Reverb
@@ -258,33 +266,20 @@
         // NOUVEAU : Passé de 5ms à 500ms. 5ms saturait le port USB Série et bloquait complètement la Teensy !
         if (tempsActuel - lastHeartbeat >= 500) { 
             lastHeartbeat = tempsActuel;
-            /*
-            // Serial.print("Charge CPU Audio Actuelle : ");
-            // Serial.print(AudioProcessorUsage());
-            // Serial.println(" %");
+            Serial.print("Charge CPU Audio Actuelle : ");
+            Serial.print(AudioProcessorUsage());
+            Serial.println(" %");
 
-            // Serial.print("Charge CPU Audio Max : ");
-            // Serial.print(AudioProcessorUsageMax());
-            // Serial.println(" %");
+            Serial.print("Charge CPU Audio Max : ");
+            Serial.print(AudioProcessorUsageMax());
+            Serial.println(" %");
 
-            // Serial.print("Niveaux Signal Cordes (Brut) : ");
-            // for (int i = 0; i < 6; i++) {
-            //     if (stringPeaks[i].available()) {
-            //         float val = stringPeaks[i].read(); // Valeur brute (0.0 à 1.0)
-            //         Serial.print(val, 4);              // Affichage avec 4 décimales
-            //     } else {
-            //         Serial.print("N/A");               // Indique si le flux audio est bloqué
-            //     }
-            //     if (i < 5) Serial.print(" | ");
-            // }
-            // Serial.println();
-            // // --------------------------------------------------
-            */
                 
             Serial.print("Delay actif Premiere corde : ");
             Serial.print(mesDelays[0].isEnabled());
             Serial.print(" Delay Mix Premiere corde : ");
             Serial.println(mesDelays[0].getMix());
+            
             digitalWrite(13, !digitalRead(13)); // Clignotement lent
         }
 
@@ -331,10 +326,6 @@
 
     void OnControlChange(byte channel, byte control, byte value) {
         float valNorm = value / 127.0f;
-
-        int ccRelatif = control - 10;
-        int corde = ccRelatif / 6;
-        int potard = ccRelatif % 6;
 
         // --- TRANCHE 1 : DELAY (CC 10 à 45) ---
         if (control >= 10 && control <= 45) {

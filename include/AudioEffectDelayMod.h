@@ -46,7 +46,7 @@ public:
     void setParameter(int param_id, float value);
 
     // ON/OFF soft basé sur le mix
-    void setEnabled(bool e)          { active = e; }
+    void setEnabled(bool e);
     bool isEnabled() const           { return active; }
 
     // AudioStream
