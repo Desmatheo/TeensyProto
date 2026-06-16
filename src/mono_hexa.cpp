@@ -408,19 +408,11 @@
             mesDelays[corde].setEnabled(false);
         }
 
-        // --- TRANCHE 4 : MUTE DES CORDES INDIVIDUELLES (CC 0 à 5) ---
+        // --- TRANCHE 4 : BYPASS DES CORDES INDIVIDUELLES (CC 0 à 5) ---
         else if (control >= 0 && control <= 5) {
-            for (int i = 0; i < 6; i++) {
-                mesDistos[i].setEnabled(false);
-                mesDelays[i].setEnabled(false);
-                EffetEarth[i].setEnabled(false);
-            }
-            // if (cordeMute[corde]) {          // Si on mute, on coupe le son instantanément
-            //     #if !InputTDM
-            //     volumesCordes[corde] = 0.0f;
-            //     mesOscs[corde].amplitude(0.0f);
-            //     #endif
-            // }
+            mesDistos[control].setEnabled(false);
+            mesDelays[control].setEnabled(false);
+            EffetEarth[control].setEnabled(false);
         }
         
         // --- TRANCHE 5 : BYPASS GLOBAL (CC 126) ---
@@ -428,8 +420,7 @@
             for (int i = 0; i < 6; i++) {
                 mesDistos[i].setEnabled(false);
                 mesDelays[i].setEnabled(false);
-                EffetEarth[i].setEnabled(true);
-                EffetEarth[i].setMix(0.0f);
+                EffetEarth[i].setEnabled(false);
             }
         }
     }

@@ -219,12 +219,10 @@ void EarthEffect::update() {
 void EarthEffect::setMix(float mix) {
     dryMix = 1.0f - mix;
     wetMix = mix;
-    Serial.println("Earth Mix fait !");
 }
 
 void EarthEffect::setOctaveMode(int mode) {
     effect_mode = mode;
-    Serial.println("Earth octave fait !");
 }
 
 
