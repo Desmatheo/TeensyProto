@@ -147,8 +147,8 @@ float DelayEffect::DelayChannel::Process(float in) {
     }
     
     // Limiteur de saturation interne
-    if (write_val > 2.0f) write_val = 2.0f;
-    if (write_val < -2.0f) write_val = -2.0f;
+    if (write_val > 1.0f) write_val = 1.0f;
+    if (write_val < -1.0f) write_val = -1.0f;
     
     buffer[write_idx] = write_val;
 
