@@ -41,17 +41,17 @@ bool AudioEffectDrive::begin(uint32_t table_len)
 
     table_len_ = table_len;
 
-    // On alloue dans la RAM interne standard (malloc) car il n'y a pas de PSRAM externe
-    table_ = (int16_t*)malloc(table_len_ * sizeof(int16_t));
+    // On tente la PSRAM
+    table_ = (int16_t*)extmem_malloc(table_len_ * sizeof(int16_t));
     if (table_) {
-        use_extmem_ = false; // On n'utilise PAS la PSRAM
-        memset(table_, 0, table_len_ * sizeof(int16_t));
+        use_extmem_ = true;
         rebuildTable();
         ready_ = true;
         return true;
     }
     
     table_ = nullptr;
+    use_extmem_ = false;
     ready_ = false;
     return false;
 }
@@ -116,7 +116,7 @@ void AudioEffectDrive::setEnabled(bool e)
     active_mix_ = enabled_ ? mix_ : 0.0f;
 }
 
-// --- Courbe théorique pour remplir la LUT ---  type de sat  
+// --- Courbe théorique pour remplir la LUT ---
 float AudioEffectDrive::evalCurve(curve_t c, float x)
 {
     // sécurité

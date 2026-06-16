@@ -1,8 +1,8 @@
 #pragma once
 
-#define TEENSY 
+#include "../../include/Utils.h"
 
-#ifndef TEENSY
+#if DAISY
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "../include/funbox.h"
@@ -21,7 +21,7 @@ using namespace funbox;
 #include "Util/Multirate.h"
 #include "Util/OctaveGenerator.h"
 
-#ifndef TEENSY
+#if DAISY
 class EarthEffect : public Effect {
 #else
 class EarthEffect : public AudioStream {
@@ -36,7 +36,7 @@ class EarthEffect : public AudioStream {
     Decimator2 decimate2;
     Interpolator interpolate;
     OctaveGenerator octave;
-#ifndef TEENSY
+#if DAISY
     q::highshelf eq1;
     q::lowshelf eq2;
     Overdrive overdrive;
@@ -52,7 +52,7 @@ class EarthEffect : public AudioStream {
     bool odOn = false;
     bool bypass = false;
 
-#ifndef TEENSY
+#if DAISY
     EarthEffect(float sampleRate); 
 #else
     EarthEffect(); 
@@ -61,7 +61,7 @@ class EarthEffect : public AudioStream {
 
     void midiUpdate();
 
-#ifndef TEENSY
+#if DAISY
     void update(const float** in, float** out, int idx) override;
     float updateTest(const float in, float out, int idx) override;
 #endif
@@ -70,21 +70,21 @@ class EarthEffect : public AudioStream {
     
     void setOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
 
-#ifndef TEENSY
+#if DAISY
     void setParameter(int param_id, float value) override;
 #else
     void setParameter(int param_id, float value);
 #endif
 
-#ifdef TEENSY
-
-    // ON/OFF soft basé sur le mix
-    void setEnabled(bool e)          { active = e;}
-    bool isEnabled() const           { return active; }
+    // --- METHODES ET VARIABLES PARTAGEES ---
+    void setEnabled(bool e) { active = e; }
+    bool isEnabled() const  { return active; }
 
 private:
-
-    bool  active      = false;      // effet actif ou non
+    bool active = false; // effet actif ou non
+    
+#if !DAISY
+    // --- SPECIFIQUE TEENSY ---
     audio_block_t* inputQueueArray_[1];
 #endif
 };

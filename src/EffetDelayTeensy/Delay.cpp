@@ -1,11 +1,11 @@
 #include "Delay.h"
 
-#ifndef TEENSY
+#if DAISY
 using namespace daisy;
 using namespace daisysp;
 #endif
 
-#ifndef TEENSY
+#if DAISY
 void NeptuneEffect::DelayChannel::Init(DelayLineOct<float, MAX_DELAY>* delayLine, float sampleRate) {
     del = delayLine;
     del->Init();
@@ -72,9 +72,8 @@ float NeptuneEffect::updateTest(const float in, float out, int idx) {
 
 
 #else
-// ==========================================
-// PORTAGE TEENSY 
-// ==========================================
+
+// ------ Partie TEENSY -------
 
 void DelayEffect::DelayChannel::Init(float sampleRate, uint32_t max_delay_samples) {
     buf_len = max_delay_samples;
@@ -233,7 +232,7 @@ void DelayEffect::update() {
 #endif
 
 void DelayEffect::setMix(float mix) {
-#ifndef TEENSY
+#if DAISY
     wetMix = fclamp(mix, 0.0f, 1.0f);
 #else
     wetMix = (mix < 0.01f) ? 0.0f : ((mix > 1.0f) ? 1.0f : mix);
@@ -242,7 +241,7 @@ void DelayEffect::setMix(float mix) {
 }
 
 void DelayEffect::setDelayTime(float time) {
-#ifndef TEENSY
+#if DAISY
     vdelayTime = fclamp(time, 0.0f, 1.0f);
 #else
     vdelayTime = (time < 0.0f) ? 0.0f : ((time > 1.0f) ? 1.0f : time);
@@ -252,7 +251,7 @@ void DelayEffect::setDelayTime(float time) {
     delayL.active = isActive;
     delayR.active = isActive;
 
-#ifndef TEENSY
+#if DAISY
     float target = fmap(vdelayTime, 2400.0f, static_cast<float>(MAX_DELAY), Mapping::LOG);
 #else
     // Mapping logarithmique (équivalent de fmap Mapping::LOG)
@@ -266,7 +265,7 @@ void DelayEffect::setDelayTime(float time) {
 }
 
 void DelayEffect::setFeedback(float fdbk) {
-#ifndef TEENSY
+#if DAISY
     vdelayFDBK = fclamp(fdbk, 0.0f, 0.99f);
 #else
     vdelayFDBK = (fdbk < 0.0f) ? 0.0f : ((fdbk > 0.99f) ? 0.99f : fdbk);

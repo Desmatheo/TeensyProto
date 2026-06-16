@@ -1,8 +1,8 @@
 #pragma once
 
-#define TEENSY 
+#include "../../include/Utils.h"
 
-#ifndef TEENSY
+#if DAISY
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "delayline_oct.h"
@@ -19,22 +19,22 @@ using namespace daisysp;
 #endif
 
 
-#ifndef TEENSY
+#if DAISY
 class DelayEffect : public Effect {
 #else 
 class DelayEffect : public AudioStream{
 #endif
 public:
 
-    #ifndef TEENSY
+#if DAISY
     static constexpr size_t MAX_DELAY = static_cast<size_t>(48000 * 4.0f); // 4 secondes de delay max
     // Lignes de delay
     DelayLineOct<float, MAX_DELAY> delayLineOctLeft;
     DelayLineOct<float, MAX_DELAY> delayLineOctRight;
-    #else
+#else
     // Sur Teensy, avec 44100Hz
     static constexpr size_t MAX_DELAY = static_cast<size_t>(44100 * 4.0f);
-    #endif
+#endif
 
     // Paramètres internes
     float dryMix = 0.5f;
@@ -45,7 +45,7 @@ public:
 
     // Structure interne pour gérer proprement un canal de delay (gauche/droite)
     struct DelayChannel {
-#ifndef TEENSY
+#if DAISY
         DelayLineOct<float, MAX_DELAY>* del;
         Tone tone;
 #else
@@ -63,7 +63,7 @@ public:
         float feedback = 0.0f;
         bool active = false;
 
-#ifndef TEENSY
+#if DAISY
         void Init(DelayLineOct<float, MAX_DELAY>* delayLine, float sampleRate);
 #else
         void Init(float sampleRate, uint32_t max_delay_samples);
@@ -75,7 +75,7 @@ public:
     DelayChannel delayL;
     DelayChannel delayR;  
 
-#ifndef TEENSY
+#if DAISY
     DelayEffect(float sampleRate);
 #else
     DelayEffect();
@@ -83,7 +83,7 @@ public:
     bool begin();
 #endif
 
-#ifndef TEENSY
+#if DAISY
     void update(const float** in, float** out, int idx) override;
     float updateTest(const float in, float out, int idx) override;
 #else 
@@ -99,7 +99,7 @@ public:
     void setDelayTime(float time);
     void setFeedback(float fdbk);
     float getMix() {return wetMix;};
-#ifndef TEENSY
+#if DAISY
     void setParameter(int param_id, float value) override;
 #else
     void setParameter(int param_id, float value);

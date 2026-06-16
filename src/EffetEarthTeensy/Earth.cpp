@@ -1,16 +1,13 @@
 // Earth Reverbscape
-#define TEENSY
-
-#ifndef TEENSY
-#include "daisy_seed.h"
-#include "daisysp.h"
-#include "../include/funbox.h"
-#endif
 
 #include "Earth.h"
 
 #include <span>
-#ifndef TEENSY
+
+#if DAISY
+#include "daisy_seed.h"
+#include "daisysp.h"
+#include "../include/funbox.h"
 #include <q/support/literals.hpp>
 namespace q = cycfi::q;
 using namespace q::literals;
@@ -19,15 +16,12 @@ using namespace daisy;
 using namespace daisysp;
 using namespace funbox; 
 
-#define eq_ON 1
-#define od_ON 1
-#else
-// Sur Teensy, on désactive l'EQ et l'overdrive comme demandé
-#define eq_ON 0
-#define od_ON 0
 #endif
 
-#ifndef TEENSY
+#define eq_ON 0
+#define od_ON 0
+
+#if DAISY
 EarthEffect::EarthEffect(float sampleRate)
     : octave(sampleRate / resample_factor),
       eq1(-11, 140_Hz, sampleRate),
@@ -46,16 +40,14 @@ EarthEffect::EarthEffect()
     setMix(1.0f);
     setOctaveMode(1);
 
-#ifndef TEENSY
 #if od_ON
     overdrive.Init();
     overdrive.SetDrive(0.4f);
     current_ODswell = 0.4f;
 #endif
-#endif
 }
 
-#ifndef TEENSY
+#if DAISY
 void EarthEffect::update(const float** in, float** out, int idx) {
     float inputL;
     float inputR;
@@ -181,8 +173,8 @@ void EarthEffect::update() {
                 octave.update(sample, effect_mode);
 
                 if (effect_mode == 1) octave_mix += octave.up1() * 1.0f;
-                if (effect_mode == 2) octave_mix += octave.down1() * 1.0f;
-                if (effect_mode == 3) octave_mix += octave.down2() * 1.0f;
+                if (effect_mode == 2) octave_mix += octave.down1() * 2.0f;
+                if (effect_mode == 3) octave_mix += octave.down2() * 4.0f;
 
                 auto out_chunk = interpolate(octave_mix);
                 for (size_t j = 0; j < out_chunk.size(); ++j) {
@@ -235,8 +227,10 @@ void EarthEffect::setParameter(int param_id, float value) {
             if (value > 0.66f) setOctaveMode(1);
             else if ((0.66f > value) && (value > 0.33f)) setOctaveMode(2);
             else setOctaveMode(3);
+            break; 
         default:
-            Serial.print("Parametre invalide");
+            Serial.print("Parametre invalide: ");
             Serial.println(param_id);
+            break;
     };
 }
