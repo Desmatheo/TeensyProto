@@ -69,6 +69,9 @@ public:
     // mix (0..1) : 0 = 100% dry, 1 = 100% wet
     void setMix(float mix);
 
+    // Volume de sortie du signal distordu (Level)
+    void setVolume(float vol);
+
     // choix de la courbe
     void setCurve(curve_t c);
     void setCurve(uint8_t c) { setCurve((curve_t)(c & 0x03)); }
@@ -80,6 +83,7 @@ public:
     float   getDriveDb() const { return drive_dB_; }
     float   getToneHz()  const { return tone_hz_; }
     float   getMix()     const { return mix_; }
+    float   getVolume()  const { return volume_; }
     curve_t getCurve()   const { return curve_; }
 
     // ON/OFF soft basé sur le mix : OFF => active_mix_ = 0
@@ -101,6 +105,7 @@ private:
     float   tone_hz_    = 2000.0f; // 800..8000
     float   mix_        = 0.5f;   // mix utilisateur (0..1)
     float   active_mix_ = 0.5f;   // mix effectif (0..1) (ON/OFF)
+    float   volume_     = 0.5f;   // volume de sortie du signal wet
     curve_t curve_      = CURVE_SOFT;
     bool    enabled_    = true;
 

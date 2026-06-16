@@ -90,6 +90,11 @@ void AudioEffectDrive::setMix(float mix)
     active_mix_ = enabled_ ? mix_ : 0.0f;
 }
 
+void AudioEffectDrive::setVolume(float vol)
+{
+    volume_ = clampf(vol, 0.0f, 1.0f);
+}
+
 void AudioEffectDrive::setCurve(curve_t c)
 {
     curve_ = c;
@@ -226,8 +231,11 @@ void AudioEffectDrive::update()
         float yLP = tone_a0_ * ws + tone_b1_ * z1;
         z1 = yLP;
 
+        // Ajustement du niveau de l'effet (Level)
+        float wet = yLP * volume_;
+
         // Mix dry/wet
-        float y = one_minus_mix * dry + mix * yLP;
+        float y = one_minus_mix * dry + mix * wet;
 
         // clamp & convert
         if (y > 1.0f)  y = 1.0f;

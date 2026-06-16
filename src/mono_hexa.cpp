@@ -4,6 +4,7 @@
 #include "AudioEffectDelayMod.h"
 #include "EffetEarthTeensy/Earth.h"
 #include "EffetDelayTeensy/Delay.h"
+#include "EffetDistoTeensy/AudioEffectDrive.h"
 #include "../include/Utils.h"
 
 
@@ -22,6 +23,7 @@
     DelayEffect              mesDelays[6];
     #endif
     EarthEffect              EffetEarth[6];
+    AudioEffectDrive         mesDistos[6];
     
 
     // Comme la reverb est stéréo, il faut 2 canaux de mixage
@@ -66,22 +68,22 @@
     AudioConnection p_osc_dist4(mesOscs[4], 0, mesDistos[4], 0);
     AudioConnection p_osc_dist5(mesOscs[5], 0, mesDistos[5], 0);
     #else
-    AudioConnection p_tdm_dist0(inputTDM, 10, EffetEarth[0], 0);
-    AudioConnection p_tdm_dist1(inputTDM, 8,  EffetEarth[1], 0);
-    AudioConnection p_tdm_dist2(inputTDM, 6,  EffetEarth[2], 0);
-    AudioConnection p_tdm_dist3(inputTDM, 4,  EffetEarth[3], 0);
-    AudioConnection p_tdm_dist4(inputTDM, 2,  EffetEarth[4], 0);
-    AudioConnection p_tdm_dist5(inputTDM, 0,  EffetEarth[5], 0);
+    AudioConnection p_tdm_dist0(inputTDM, 10, mesDistos[0], 0);
+    AudioConnection p_tdm_dist1(inputTDM, 8,  mesDistos[1], 0);
+    AudioConnection p_tdm_dist2(inputTDM, 6,  mesDistos[2], 0);
+    AudioConnection p_tdm_dist3(inputTDM, 4,  mesDistos[3], 0);
+    AudioConnection p_tdm_dist4(inputTDM, 2,  mesDistos[4], 0);
+    AudioConnection p_tdm_dist5(inputTDM, 0,  mesDistos[5], 0);
     #endif
 
 
     #if !SoloEffect
-    // AudioConnection p_dist_earth0(mesDistos[0], 0, EffetEarth[0], 0);
-    // AudioConnection p_dist_earth1(mesDistos[1], 0, EffetEarth[1], 0);
-    // AudioConnection p_dist_earth2(mesDistos[2], 0, EffetEarth[2], 0);
-    // AudioConnection p_dist_earth3(mesDistos[3], 0, EffetEarth[3], 0);
-    // AudioConnection p_dist_earth4(mesDistos[4], 0, EffetEarth[4], 0);
-    // AudioConnection p_dist_earth5(mesDistos[5], 0, EffetEarth[5], 0);
+    AudioConnection p_dist_earth0(mesDistos[0], 0, EffetEarth[0], 0);
+    AudioConnection p_dist_earth1(mesDistos[1], 0, EffetEarth[1], 0);
+    AudioConnection p_dist_earth2(mesDistos[2], 0, EffetEarth[2], 0);
+    AudioConnection p_dist_earth3(mesDistos[3], 0, EffetEarth[3], 0);
+    AudioConnection p_dist_earth4(mesDistos[4], 0, EffetEarth[4], 0);
+    AudioConnection p_dist_earth5(mesDistos[5], 0, EffetEarth[5], 0);
 
     AudioConnection p_earth_dly0(EffetEarth[0], 0, mesDelays[0], 0);
     AudioConnection p_earth_dly1(EffetEarth[1], 0, mesDelays[1], 0);
@@ -217,8 +219,9 @@
             #endif
             
             // Initialisation de la Disto
-            // mesDistos[i].begin(2048);
-            // mesDistos[i].setMix(0.0f); // Par défaut bypass
+            mesDistos[i].begin(2048);
+            mesDistos[i].setMix(0.0f); // Par défaut bypass
+            mesDistos[i].setVolume(0.2f); // On abaisse le volume par défaut pour éviter de percer les tympans
             
             // Initialisation de chaque delay
             #if DelayPaulo
@@ -317,7 +320,7 @@
                 mesDelays[corde].setParameter(potard, valNorm);
             }
             EffetEarth[corde].setEnabled(false);
-            //mesDistos[corde].setEnabled(false);
+            mesDistos[corde].setEnabled(false);
         }
         
         // --- TRANCHE 2 : DISTORTION (CC 50 à 85) ---
@@ -329,10 +332,10 @@
             if (corde >= 0 && corde < 6) {
                 effetActif[corde] = 2; // Mémorise que Disto est l'effet de cette corde
                 if (!stringBypass[corde] && !globalBypassState) {
-                    //mesDistos[corde].setEnabled(true);
+                    mesDistos[corde].setEnabled(true);
                 }   
                 // Affichage mouchard dans la console VS Code
-                Serial.print("MIDI -> Effet: DELAY | Corde: ");
+                Serial.print("MIDI -> Effet: DISTO | Corde: ");
                 Serial.print(corde);
                 Serial.print(" | Potard: P");
                 Serial.print(potard + 1);
@@ -340,9 +343,10 @@
                 Serial.println(value);
 
                 
-                // if (potard == 0) mesDistos[corde].setDriveDb(valNorm * 30.0f);            // Gain
-                // if (potard == 1) mesDistos[corde].setToneHz(800.0f + valNorm * 7200.0f);  // Tone
-                // if (potard == 2) mesDistos[corde].setMix(valNorm);                        // Mix
+                if (potard == 0) mesDistos[corde].setDriveDb(valNorm * 30.0f);            // Gain
+                if (potard == 1) mesDistos[corde].setToneHz(800.0f + valNorm * 7200.0f);  // Tone
+                if (potard == 2) mesDistos[corde].setMix(valNorm);                        // Mix
+                if (potard == 3) mesDistos[corde].setVolume(valNorm);                     // Level (Volume)
             }
             EffetEarth[corde].setEnabled(false);
             mesDelays[corde].setEnabled(false);
@@ -372,7 +376,7 @@
 
                 EffetEarth[corde].setParameter(potard, valNorm);
             }
-            //mesDistos[corde].setEnabled(false);
+            mesDistos[corde].setEnabled(false);
             mesDelays[corde].setEnabled(false);
         }
 
@@ -384,13 +388,13 @@
             stringBypass[control] = isBypassed;
             
             if (isBypassed || globalBypassState) {
-                //mesDistos[control].setEnabled(false);
+                mesDistos[control].setEnabled(false);
                 mesDelays[control].setEnabled(false);
                 EffetEarth[control].setEnabled(false);
             } else {
                 // Si on sort du bypass, on réactive le dernier effet utilisé
                 if (effetActif[control] == 1) mesDelays[control].setEnabled(true);
-                //else if (effetActif[control] == 2) mesDistos[control].setEnabled(true);
+                else if (effetActif[control] == 2) mesDistos[control].setEnabled(true);
                 else if (effetActif[control] == 3) EffetEarth[control].setEnabled(true);
             }
         }
@@ -400,12 +404,12 @@
             globalBypassState = (value > 63);
             for (int i = 0; i < 6; i++) {
                 if (globalBypassState || stringBypass[i]) {
-                    //mesDistos[i].setEnabled(false);
+                    mesDistos[i].setEnabled(false);
                     mesDelays[i].setEnabled(false);
                     EffetEarth[i].setEnabled(false);
                 } else {
                     if (effetActif[i] == 1) mesDelays[i].setEnabled(true);
-                    //else if (effetActif[i] == 2) mesDistos[i].setEnabled(true);
+                    else if (effetActif[i] == 2) mesDistos[i].setEnabled(true);
                     else if (effetActif[i] == 3) EffetEarth[i].setEnabled(true);
                 }
 
