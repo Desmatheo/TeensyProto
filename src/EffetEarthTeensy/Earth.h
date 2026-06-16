@@ -52,11 +52,6 @@ class EarthEffect : public AudioStream {
     bool odOn = false;
     bool bypass = false;
 
-    // Control States
-    int fs_action = 2;   // 1=OD, 2=Octave
-    bool octave_only = false;
-    bool momentary_active = false;
-
 #ifndef TEENSY
     EarthEffect(float sampleRate); 
 #else
@@ -74,11 +69,6 @@ class EarthEffect : public AudioStream {
     void setMix(float mix);                // Ctrl 2 (0.0 -> 1.0)
     
     void setOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
-    void setFootswitchAction(int action);  // 3-Way Switch 3 (1, 2)
-    
-    void setOctaveOnlyMode(bool enable);         // Dip Switch 2
-    
-    void setMomentaryAction(bool active);        // FS 2
 
 #ifndef TEENSY
     void setParameter(int param_id, float value) override;

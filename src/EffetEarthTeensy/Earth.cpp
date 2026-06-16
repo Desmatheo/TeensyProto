@@ -166,12 +166,6 @@ void EarthEffect::update() {
         return;
     }
 
-    // Applique l'action momentanée (Momentary Octave) FS2
-    int active_effect_mode = effect_mode;
-    if (momentary_active && fs_action == 2) {
-        active_effect_mode = (effect_mode == 0) ? 1 : effect_mode;
-    }
-
     for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
         float inputL = (float)in->data[i] / 32768.0f;
         inputL += 1e-9f; // Anti-denormal
@@ -206,16 +200,8 @@ void EarthEffect::update() {
         if (bin_counter > 5) bin_counter = 0;
 
         float octave_signal = buff_out[bin_counter];
-        float effect_input = inputL;
-        if (active_effect_mode != 0) { 
-            if (1) {
-                effect_input = octave_signal; 
-            } else {
-                effect_input = inputL + octave_signal; 
-            }
-        }
 
-        float output = (inputL * dryMix) + (effect_input * wetMix);
+        float output = (inputL * dryMix) + (octave_signal * wetMix);
 
         if (output > 1.0f) output = 1.0f;
         if (output < -1.0f) output = -1.0f;
@@ -241,17 +227,6 @@ void EarthEffect::setOctaveMode(int mode) {
     Serial.println("Earth octave fait !");
 }
 
-void EarthEffect::setFootswitchAction(int action) {
-    fs_action = action;
-}
-
-void EarthEffect::setOctaveOnlyMode(bool enable) {
-    octave_only = enable;
-}
-
-void EarthEffect::setMomentaryAction(bool active) {
-    momentary_active = active;
-}
 
 void EarthEffect::setParameter(int param_id, float value) {
     switch (param_id){
