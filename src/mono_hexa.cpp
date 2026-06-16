@@ -340,11 +340,8 @@
                 Serial.print(" | Valeur: ");
                 Serial.println(value);
 
-                
-                if (potard == 0) mesDistos[corde].setDriveDb(valNorm * 30.0f);            // Gain
-                if (potard == 1) mesDistos[corde].setToneHz(800.0f + valNorm * 7200.0f);  // Tone
-                if (potard == 2) mesDistos[corde].setMix(valNorm);                        // Mix
-                if (potard == 3) mesDistos[corde].setVolume(valNorm);                     // Level (Volume)
+                // Appel de la fonction unifiée
+                mesDistos[corde].setParameter(potard, valNorm);
             }
             EffetEarth[corde].setEnabled(false);
             mesDelays[corde].setEnabled(false);

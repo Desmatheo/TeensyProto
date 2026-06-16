@@ -113,6 +113,29 @@ void AudioEffectDrive::setParams(float drive_dB, float tone_hz, float mix, curve
     setCurve(curve);
 }
 
+void AudioEffectDrive::setParameter(int param_id, float value)
+{
+    switch (param_id) {
+        case 0:
+            setDriveDb(value * 30.0f);            // Gain (0 à 30 dB)
+            break;
+        case 1:
+            setToneHz(800.0f + value * 7200.0f);  // Tone (800 à 8000 Hz)
+            break;
+        case 2:
+            setMix(value);                        // Mix (0 à 1)
+            break;
+        case 5:
+            setVolume(value);                     // Level / Volume (0 à 1)
+            break;
+        default:
+            Serial.print("Parametre invalide: ");
+            Serial.println(param_id);
+            break;
+    }
+}
+
+
 // ON/OFF soft basé sur le mix
 void AudioEffectDrive::setEnabled(bool e)
 {

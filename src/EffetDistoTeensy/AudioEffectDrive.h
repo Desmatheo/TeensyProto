@@ -72,6 +72,9 @@ public:
     // Volume de sortie du signal distordu (Level)
     void setVolume(float vol);
 
+    // Paramétrage générique unifié (0 à 1)
+    void setParameter(int param_id, float value);
+
     // choix de la courbe
     void setCurve(curve_t c);
     void setCurve(uint8_t c) { setCurve((curve_t)(c & 0x03)); }
