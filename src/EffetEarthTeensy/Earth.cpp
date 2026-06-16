@@ -132,7 +132,7 @@ void EarthEffect::update(const float** in, float** out, int idx) {
 #endif
 
     // Mixage final dry/wet pour cet effet de corde
-    out[0][idx] = inputL * dryMix + effect_output * wetMix;
+    out[0][idx] = inputL * dryMix + effect_output * wetMix * volume;
     out[1][idx] = out[0][idx];
 }
 
@@ -193,7 +193,7 @@ void EarthEffect::update() {
 
         float octave_signal = buff_out[bin_counter];
 
-        float output = (inputL * dryMix) + (octave_signal * wetMix);
+        float output = (inputL * dryMix) + (octave_signal * wetMix * volume);
 
         if (output > 1.0f) output = 1.0f;
         if (output < -1.0f) output = -1.0f;
@@ -213,6 +213,11 @@ void EarthEffect::setMix(float mix) {
     wetMix = mix;
 }
 
+void EarthEffect::setVolume(float vol)
+{
+    volume = clampf(vol, 0.0f, 1.0f);
+}
+
 void EarthEffect::setOctaveMode(int mode) {
     effect_mode = mode;
 }
@@ -228,6 +233,9 @@ void EarthEffect::setParameter(int param_id, float value) {
             else if ((0.66f > value) && (value > 0.33f)) setOctaveMode(2);
             else setOctaveMode(3);
             break; 
+        case 5 : 
+            setVolume(value);
+            break;
         default:
             Serial.print("Parametre invalide: ");
             Serial.println(param_id);

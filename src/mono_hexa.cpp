@@ -206,8 +206,6 @@
         cs42448_1.inputLevel(1);
         cs42448_1.volume(1.0);
 
-
-
         #endif
 
         #pragma region Initialisation des effets et oscillateurs

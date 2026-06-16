@@ -12,6 +12,7 @@
 #include "AudioEffectDrive.h"
 #include <math.h>
 #include <string.h> // memset
+#include "../../include/Utils.h"
 
 AudioEffectDrive::AudioEffectDrive()
 : AudioStream(1, inputQueueArray_)

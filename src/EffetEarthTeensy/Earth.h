@@ -31,6 +31,7 @@ class EarthEffect : public AudioStream {
 
     float dryMix;
     float wetMix;
+    float volume = 1;
 
 
     Decimator2 decimate2;
@@ -67,6 +68,7 @@ class EarthEffect : public AudioStream {
 #endif
 
     void setMix(float mix);                // Ctrl 2 (0.0 -> 1.0)
+    void setVolume(float vol);             // Ctrl 1 (0.0 -> 1.0
     
     void setOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
 

@@ -9,3 +9,9 @@
 #endif
 #define OutputUSB 1   // 1: Sortie Casque/PC (USB), 0: Désactivé
 #define DelayPaulo 0
+
+
+
+static inline float clampf(float v, float lo, float hi) {
+    return (v < lo) ? lo : (v > hi) ? hi : v;
+}

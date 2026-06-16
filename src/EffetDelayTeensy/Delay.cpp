@@ -62,8 +62,8 @@ void NeptuneEffect::update(const float** in, float** out, int idx) {
     float delay_outR = delayR.Process(inputR);
 
     // Mixage du son original (dry) et du son traité (wet)
-    out[0][idx] = inputL * dryMix + delay_outL * wetMix;
-    out[1][idx] = inputR * dryMix + delay_outR * wetMix;
+    out[0][idx] = inputL * dryMix + delay_outL * wetMix * volume;
+    out[1][idx] = inputR * dryMix + delay_outR * wetMix * volume;
 }
 
 float NeptuneEffect::updateTest(const float in, float out, int idx) {
@@ -208,8 +208,8 @@ void DelayEffect::update() {
         float delay_outL = delayL.Process(inputL);
         float delay_outR = delayR.Process(inputR);
 
-        float outputL = (inputL * dryMix) + (delay_outL * wetMix);
-        float outputR = (inputR * dryMix) + (delay_outR * wetMix);
+        float outputL = (inputL * dryMix) + (delay_outL * wetMix * volume);
+        float outputR = (inputR * dryMix) + (delay_outR * wetMix * volume);
 
         // Saturation douce (clamp final)
         if (outputL > 1.0f) outputL = 1.0f;
@@ -232,20 +232,17 @@ void DelayEffect::update() {
 #endif
 
 void DelayEffect::setMix(float mix) {
-#if DAISY
-    wetMix = fclamp(mix, 0.0f, 1.0f);
-#else
-    wetMix = (mix < 0.01f) ? 0.0f : ((mix > 1.0f) ? 1.0f : mix);
-#endif
+    wetMix = clampf(mix, 0.0f, 1.0f);
     dryMix = 1.0f - wetMix;
 }
 
+void DelayEffect::setVolume(float vol)
+{
+    volume = clampf(vol, 0.0f, 1.0f);
+}
+
 void DelayEffect::setDelayTime(float time) {
-#if DAISY
-    vdelayTime = fclamp(time, 0.0f, 1.0f);
-#else
-    vdelayTime = (time < 0.0f) ? 0.0f : ((time > 1.0f) ? 1.0f : time);
-#endif
+    vdelayTime = clampf(time, 0.0f, 1.0f);
     // Mise à jour de l'état actif et de la cible du delay uniquement quand la valeur change
     bool isActive = (vdelayTime > 0.01f);
     delayL.active = isActive;
@@ -265,11 +262,7 @@ void DelayEffect::setDelayTime(float time) {
 }
 
 void DelayEffect::setFeedback(float fdbk) {
-#if DAISY
-    vdelayFDBK = fclamp(fdbk, 0.0f, 0.99f);
-#else
-    vdelayFDBK = (fdbk < 0.0f) ? 0.0f : ((fdbk > 0.99f) ? 0.99f : fdbk);
-#endif
+    vdelayFDBK = clampf(fdbk, 0.0f, 0.99f);
 
     delayL.feedback = vdelayFDBK;
     delayR.feedback = vdelayFDBK;
@@ -286,6 +279,9 @@ void DelayEffect::setParameter(int param_id, float value) {
             break;
         case 2:
             setFeedback(value);
+            break;
+        case 5: 
+            setVolume(value);
             break;
         default:
             break;

@@ -39,6 +39,7 @@ public:
     // Paramètres internes
     float dryMix = 0.5f;
     float wetMix = 0.5f;
+    float volume = 1;
     float vdelayTime = 0.5f;
     float vdelayFDBK = 0.7f;
 
@@ -96,6 +97,7 @@ public:
 
     // Setters pour personnalisation
     void setMix(float mix);
+    void setVolume(float vol);
     void setDelayTime(float time);
     void setFeedback(float fdbk);
     float getMix() {return wetMix;};

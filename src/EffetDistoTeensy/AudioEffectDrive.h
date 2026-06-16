@@ -121,11 +121,6 @@ private:
     float tone_b1_ = 0.0f;
     float tone_z1_ = 0.0f;    // état du filtre
 
-    // Helpers
-    static inline float clampf(float v, float lo, float hi) {
-        return (v < lo) ? lo : (v > hi) ? hi : v;
-    }
-
     void updateToneCoeffs();
     void rebuildTable();              // reconstruit la LUT en PSRAM selon curve_
 
