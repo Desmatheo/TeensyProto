@@ -195,8 +195,10 @@
     const float frequencesGuitare[6] = {82.41, 110.00, 146.83, 196.00, 246.94, 329.63};
     
     // --- NOUVELLES VARIABLES MUTE ET BYPASS ---
-    bool cordeMute[6] = {false, false, false, false, false, false};
     bool Bypass = false;
+    int effetActif[6] = {0, 0, 0, 0, 0, 0}; // 0 = Aucun, 1 = Delay, 2 = Disto, 3 = Earth
+    bool stringBypass[6] = {false, false, false, false, false, false};
+    bool globalBypassState = false;
 
     const int reset_p = 2; 
 
@@ -334,7 +336,10 @@
             int potard = ccRelatif % 6; // Reste -> Donne le bouton (0 à 5)
 
             if (corde >= 0 && corde < 6) {
-                mesDelays[corde].setEnabled(true);
+                effetActif[corde] = 1; // Mémorise que Delay est l'effet de cette corde
+                if (!stringBypass[corde] && !globalBypassState) {
+                    mesDelays[corde].setEnabled(true);
+                }
                 // Affichage mouchard dans la console VS Code
                 Serial.print("MIDI -> Effet: DELAY | Corde: ");
                 Serial.print(corde);
@@ -363,8 +368,10 @@
             int potard = ccRelatif % 6;
 
             if (corde >= 0 && corde < 6) {
-
-                mesDistos[corde].setEnabled(true);
+                effetActif[corde] = 2; // Mémorise que Disto est l'effet de cette corde
+                if (!stringBypass[corde] && !globalBypassState) {
+                    mesDistos[corde].setEnabled(true);
+                }   
                 // Affichage mouchard dans la console VS Code
                 Serial.print("MIDI -> Effet: DELAY | Corde: ");
                 Serial.print(corde);
@@ -390,8 +397,10 @@
 
 
             if (corde >= 0 && corde < 6) {
-
-                EffetEarth[corde].setEnabled(true);
+                effetActif[corde] = 3; // Mémorise que Earth est l'effet de cette corde
+                if (!stringBypass[corde] && !globalBypassState) {
+                    EffetEarth[corde].setEnabled(true);
+                }
                 // Affichage mouchard dans la console VS Code
                 Serial.print("MIDI -> Effet: DELAY | Corde: ");
                 Serial.print(corde);
@@ -410,17 +419,37 @@
 
         // --- TRANCHE 4 : BYPASS DES CORDES INDIVIDUELLES (CC 0 à 5) ---
         else if (control >= 0 && control <= 5) {
-            mesDistos[control].setEnabled(false);
-            mesDelays[control].setEnabled(false);
-            EffetEarth[control].setEnabled(false);
+             // La valeur > 63 suppose que 127 = Bypass ON (son coupé) et 0 = Bypass OFF.
+            // (Si ton bouton envoie l'inverse pour "Allumer l'effet", remplace par "value < 64")
+            bool isBypassed = (value > 63); 
+            stringBypass[control] = isBypassed;
+            
+            if (isBypassed || globalBypassState) {
+                mesDistos[control].setEnabled(false);
+                mesDelays[control].setEnabled(false);
+                EffetEarth[control].setEnabled(false);
+            } else {
+                // Si on sort du bypass, on réactive le dernier effet utilisé
+                if (effetActif[control] == 1) mesDelays[control].setEnabled(true);
+                else if (effetActif[control] == 2) mesDistos[control].setEnabled(true);
+                else if (effetActif[control] == 3) EffetEarth[control].setEnabled(true);
+            }
         }
         
         // --- TRANCHE 5 : BYPASS GLOBAL (CC 126) ---
         else if (control == 126) {
+            globalBypassState = (value > 63);
             for (int i = 0; i < 6; i++) {
-                mesDistos[i].setEnabled(false);
-                mesDelays[i].setEnabled(false);
-                EffetEarth[i].setEnabled(false);
+                if (globalBypassState || stringBypass[i]) {
+                    mesDistos[i].setEnabled(false);
+                    mesDelays[i].setEnabled(false);
+                    EffetEarth[i].setEnabled(false);
+                } else {
+                    if (effetActif[i] == 1) mesDelays[i].setEnabled(true);
+                    else if (effetActif[i] == 2) mesDistos[i].setEnabled(true);
+                    else if (effetActif[i] == 3) EffetEarth[i].setEnabled(true);
+                }
+
             }
         }
     }
