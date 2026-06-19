@@ -160,7 +160,7 @@ void EarthEffect::update() {
 
     for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
         float inputL = (float)in->data[i] / 32768.0f;
-        inputL += 1e-9f; // Anti-denormal
+        inputL += 1e-9f; // Anti-denormalJ'a
 
         buff[bin_counter] = inputL;
         
@@ -193,7 +193,7 @@ void EarthEffect::update() {
 
         float octave_signal = buff_out[bin_counter];
 
-        float output = (inputL * dryMix) + (octave_signal * wetMix * volume);
+        float output = ((inputL * dryMix) + (octave_signal * wetMix)) * volume;
 
         if (output > 1.0f) output = 1.0f;
         if (output < -1.0f) output = -1.0f;
@@ -215,7 +215,7 @@ void EarthEffect::setMix(float mix) {
 
 void EarthEffect::setVolume(float vol)
 {
-    volume = clampf(vol, 0.0f, 1.0f);
+    volume = (vol < 0.0f) ? 0.0f : (vol > 1.0f) ? 1.0f : vol;
 }
 
 void EarthEffect::setOctaveMode(int mode) {

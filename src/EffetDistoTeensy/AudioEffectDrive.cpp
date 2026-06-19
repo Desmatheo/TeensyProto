@@ -60,7 +60,7 @@ bool AudioEffectDrive::begin(uint32_t table_len)
 // --- Mise à jour des coefficients du low-pass 1er ordre ---
 void AudioEffectDrive::updateToneCoeffs()
 {
-    float fc = clampf(tone_hz_, 800.0f, 8000.0f);
+    float fc = (tone_hz_ < 800.0f) ? 800.0f : (tone_hz_ > 8000.0f) ? 8000.0f : tone_hz_;
     tone_hz_ = fc;
 
     float fs = AUDIO_SAMPLE_RATE_EXACT;
@@ -75,7 +75,7 @@ void AudioEffectDrive::updateToneCoeffs()
 
 void AudioEffectDrive::setDriveDb(float dB)
 {
-    drive_dB_   = clampf(dB, 0.0f, 30.0f);
+    drive_dB_   = (dB < 0.0f) ? 0.0f : (dB > 30.0f) ? 30.0f : dB;
     drive_gain_ = powf(10.0f, drive_dB_ / 20.0f);
 }
 
@@ -87,13 +87,13 @@ void AudioEffectDrive::setToneHz(float hz)
 
 void AudioEffectDrive::setMix(float mix)
 {
-    mix_        = clampf(mix, 0.0f, 1.0f);
+    mix_        = (mix < 0.0f) ? 0.0f : (mix > 1.0f) ? 1.0f : mix;
     active_mix_ = enabled_ ? mix_ : 0.0f;
 }
 
 void AudioEffectDrive::setVolume(float vol)
 {
-    volume_ = clampf(vol, 0.0f, 1.0f);
+    volume_ = (vol < 0.0f) ? 0.0f : (vol > 1.0f) ? 1.0f : vol;
 }
 
 void AudioEffectDrive::setCurve(curve_t c)
@@ -243,7 +243,7 @@ void AudioEffectDrive::update()
 
     for (int i = 0; i < AUDIO_BLOCK_SAMPLES; ++i) {
         float x = (float)in->data[i] / 32768.0f;  // dry [-1,1]
-        float dry = x;
+        float dry = x * 0.5;
 
         // Pré-gain (drive)
         float xd = x * drive_gain;

@@ -208,8 +208,8 @@ void DelayEffect::update() {
         float delay_outL = delayL.Process(inputL);
         float delay_outR = delayR.Process(inputR);
 
-        float outputL = (inputL * dryMix) + (delay_outL * wetMix * volume);
-        float outputR = (inputR * dryMix) + (delay_outR * wetMix * volume);
+        float outputL = ((inputL * dryMix) + (delay_outL * wetMix)) * volume;
+        float outputR = ((inputR * dryMix) + (delay_outR * wetMix)) * volume;
 
         // Saturation douce (clamp final)
         if (outputL > 1.0f) outputL = 1.0f;
@@ -232,17 +232,17 @@ void DelayEffect::update() {
 #endif
 
 void DelayEffect::setMix(float mix) {
-    wetMix = clampf(mix, 0.0f, 1.0f);
+    wetMix = (mix < 0.0f) ? 0.0f : (mix > 1.0f) ? 1.0f : mix;
     dryMix = 1.0f - wetMix;
 }
 
 void DelayEffect::setVolume(float vol)
 {
-    volume = clampf(vol, 0.0f, 1.0f);
+    volume = (vol < 0.0f) ? 0.0f : (vol > 1.0f) ? 1.0f : vol;
 }
 
 void DelayEffect::setDelayTime(float time) {
-    vdelayTime = clampf(time, 0.0f, 1.0f);
+    vdelayTime = (time < 0.0f) ? 0.0f : (time > 1.0f) ? 1.0f : time;
     // Mise à jour de l'état actif et de la cible du delay uniquement quand la valeur change
     bool isActive = (vdelayTime > 0.01f);
     delayL.active = isActive;
@@ -262,7 +262,7 @@ void DelayEffect::setDelayTime(float time) {
 }
 
 void DelayEffect::setFeedback(float fdbk) {
-    vdelayFDBK = clampf(fdbk, 0.0f, 0.99f);
+    vdelayFDBK = (fdbk < 0.0f) ? 0.0f : (fdbk > 0.99f) ? 0.99f : fdbk;
 
     delayL.feedback = vdelayFDBK;
     delayR.feedback = vdelayFDBK;
